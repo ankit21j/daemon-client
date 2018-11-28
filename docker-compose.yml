@@ -1,0 +1,27 @@
+version: "3"
+networks:
+  rivendell:
+    driver: bridge
+services:
+  myservice:
+    container_name: myservice
+    build: ./path/to/dockerfile
+    volumes:
+      - ${HOME}/logs/myservice/logs:/home/node/app/logs
+    ports:
+      - "3001:3001"
+    command: ["sh", "run.sh"]
+    restart: unless-stopped
+    networks:
+      - rivendell
+
+  mongodb:
+    image: mongo:3.2.21-jessie
+    volumes:
+      - ${HOME}/data/db:/data/db
+      - ${HOME}/data/configdb:/data/configdb
+      - ${HOME}/data/o4s:/data/o4s
+    ports:
+      - "27017:27017"
+    networks:
+      - rivendell
