@@ -1,6 +1,6 @@
 import * as logger from "winston"
 import * as mongo from "mongodb"
-import * as mongoose from "mongoose"
+// import * as mongoose from "mongoose"
 
 const MongoClient = mongo.MongoClient
 

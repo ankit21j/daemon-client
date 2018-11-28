@@ -3,8 +3,8 @@ import * as logger from "winston"
 
 import * as dbManager from "./db"
 
-const connectionUri: string = "mongodb://127.0.0.1:27017/"
-const db = "test-client-db"
+const connectionUri: string = "mongodb://127.0.0.1:27017/test-client-db"
+// const db = "test-client-db"
 
 const main = async () => {
   const server = app.listen(app.get("port"), err => {
