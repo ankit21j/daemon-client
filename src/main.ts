@@ -6,41 +6,38 @@ import * as logger from "winston"
 
 import * as dbManager from "./db"
 
-const server = http.createServer(app)
+import { WebSocketServerChannel } from "./webSocketChannel"
 
-const wss = new WebSocket.Server({ server })
+import { firstModule } from "./firstModule"
+import { secondModule } from "./secondModule"
 
 const connectionUri: string = "mongodb://127.0.0.1:27017/test-client-db"
-// const db = "test-client-db"
+
+import { EventBus } from './event-components/secondModule.EventBus'
 
 const main = async () => {
-  // establish a webSocket connection
-  wss.on("connection", (ws: WebSocket) => {
-    ws.on("message", (message: string) => {
-      logger.info("received: %s", message)
-      ws.send(`Hello, you sent -> ${message}`)
-    })
 
-    ws.send("Hi there, I am a WebSocket server")
-  })
+  // EventBus.sayHello.on((name) => {
+  //   logger.info('Server listening')
+  //   logger.info(`${name} said hello!`)
+  // })
 
-  server.listen(app.get("port"), err => {
-    if (err) {
-      logger.error("Server error", err)
-      throw err
-    }
-    logger.info("listening on port ", app.get("port"))
-  })
+  secondModule()
+
+  setTimeout(() => {
+    firstModule()
+  }, 10000)
 
   // connect to mongodb
   connectToMongo(connectionUri, 3)
+
 }
 
 const connectToMongo = async (uriConnect: string, retryNumber: number) => {
   try {
-    const mDb = await dbManager.connect(uriConnect)
+    const dbConnection = await dbManager.connect(uriConnect)
     logger.info("Successfully connected to mongodb")
-    mDb.on("close", () => {
+    dbConnection.on("close", () => {
       logger.error("Error! Mongo closed")
       retryMongoConnection(uriConnect, retryNumber)
     })

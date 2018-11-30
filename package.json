@@ -12,6 +12,7 @@
     "precompile": "npm run prettier-all && npm run tslint && npm run clean",
     "compile": "npm run tsc",
     "pretest": "npm run compile",
+    "dev": "ts-node ./src/main.ts",
     "build": "npm run test",
     "postbuild": "rimraf  dist/**/spec dist/**/*.spec.js",
     "debug": "cross-var node --inspect-brk=0.0.0.0:${DEBUG_PORT} --require source-map-support/register ./dist/main.js",
