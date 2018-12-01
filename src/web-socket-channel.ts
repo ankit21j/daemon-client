@@ -82,7 +82,7 @@ export class WebSocketClientChannel extends GenericChannel {
     } catch (err) {
       setTimeout(() => this._init, 500)
     }
-    (ws as WebSocket).on("open", () => {
+    ws.on("open", () => {
       this._ws = ws as WebSocket
       this._ws.on("close", reinit)
       this._ws.on("error", err => {
