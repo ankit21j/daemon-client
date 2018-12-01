@@ -3,9 +3,9 @@ import * as chokidar from "chokidar"
 
 import { EventBus } from "../client-event-bus"
 
-const pickupPath = "/Users/ankitgupta/Documents/test-vj/Laser"
+const pickupPath = "/Users/ankitgupta/Documents/test-vj/Laser/"
 
-const reportingPath = "/Users/ankitgupta/Documents/test-vj/Laser/LaserLog"
+const reportingPath = "/Users/ankitgupta/Documents/test-vj/Laser/LaserLog/"
 
 const pickupWatcher = chokidar.watch(pickupPath, {
   ignored: /(^|[\/\\])\../,
@@ -26,8 +26,17 @@ const reportingWatcher = chokidar.watch(reportingPath, {
 
 // Pickup watcher
 pickupWatcher
+  .on('ready', () => {
+    // emit an event to generate missing files
+    EventBus.pickupListAllFiles(pickupPath)
+      .then(() => {
+
+      })
+      .catch((error) => 
+      logger.error(error))
+  })
   .on("add", path => {
-    EventBus.pickupFileAdded(`${path}`)
+    EventBus.pickupFileAdded(path)
       .then(() => {
         // new file added
       })
@@ -36,9 +45,10 @@ pickupWatcher
       })
   })
   .on("unlink", path => {
-    EventBus.pickupFileRemoved(`${path}`)
-      .then(() => {
-        // file removed, add a new file  
+    EventBus.pickupFileRemoved(path)
+      .then(({lineId, skuCode}) => {
+        // file removed, add a new file with lineId and skuCode
+        logger.info(`New file lineId - ${lineId}; skucode - ${skuCode}`)
       })
       .catch(error => {
         logger.error(error)
@@ -49,7 +59,7 @@ pickupWatcher
 // Reporting watcher
 reportingWatcher
   .on("add", path => {
-    EventBus.reportingFileAdded(`${path}`)
+    EventBus.reportingFileAdded(path)
       .then(() => {
         // new file added
       })
@@ -58,7 +68,7 @@ reportingWatcher
       })
   })
   .on("change", path => {
-    EventBus.reportingFileChanged(`${path}`)
+    EventBus.reportingFileChanged(path)
       .then(() => {
         // new file added
       })
@@ -67,7 +77,7 @@ reportingWatcher
       })
   })
   .on("unlink", path => {
-    EventBus.reportingFileRemoved(`${path}`)
+    EventBus.reportingFileRemoved(path)
       .then(() => {
         // file removed, add a new file  
       })
@@ -81,3 +91,8 @@ reportingWatcher
 
 
   // Buffer watcher
+
+
+  export const watcherMain = () => {
+    logger.info('watcher main')
+  }
