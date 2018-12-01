@@ -1,42 +1,29 @@
-import * as app from "./app"
-import * as http from "http"
-import * as WebSocket from "ws"
+// import * as app from "./app"
+// import * as http from "http"
+// import * as WebSocket from "ws"
 
 import * as logger from "winston"
 
 import * as dbManager from "./db"
 
-import { WebSocketServerChannel } from "./webSocketChannel"
+import { clientParent } from "./event-components/client-parent-event"
+import { serverParent } from "./event-components/server-parent-event"
 
-import { firstModule } from "./firstModule"
-import { secondModule } from "./secondModule"
-
-const connectionUri: string = "mongodb://127.0.0.1:27017/test-client-db"
-
-import { EventBus } from './event-components/secondModule.EventBus'
+// const connectionUri: string = "mongodb://mongo/test-client-db"
+const connectionUri: string = "mongodb://localhost:27017/test-client-db"
 
 const main = async () => {
-
-  // EventBus.sayHello.on((name) => {
-  //   logger.info('Server listening')
-  //   logger.info(`${name} said hello!`)
-  // })
-
-  secondModule()
-
-  setTimeout(() => {
-    firstModule()
-  }, 10000)
-
   // connect to mongodb
   connectToMongo(connectionUri, 3)
-
+  clientParent()
+  serverParent()
 }
 
 const connectToMongo = async (uriConnect: string, retryNumber: number) => {
   try {
     const dbConnection = await dbManager.connect(uriConnect)
     logger.info("Successfully connected to mongodb")
+
     dbConnection.on("close", () => {
       logger.error("Error! Mongo closed")
       retryMongoConnection(uriConnect, retryNumber)

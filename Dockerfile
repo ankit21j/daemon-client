@@ -44,7 +44,7 @@ WORKDIR $HOME/app
 COPY pm2.json ./
 
 # need to copy this to ensure correct env is used in the app
-COPY .env ./
+# COPY .env ./
 
 EXPOSE 3001
-EXPOSE 9001
+# EXPOSE 9001

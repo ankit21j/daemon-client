@@ -1,27 +1,32 @@
 version: "3"
 networks:
-  rivendell:
-    driver: bridge
-services:
-  myservice:
-    container_name: myservice
-    build: ./path/to/dockerfile
-    volumes:
-      - ${HOME}/logs/myservice/logs:/home/node/app/logs
-    ports:
-      - "3001:3001"
-    command: ["sh", "run.sh"]
-    restart: unless-stopped
-    networks:
-      - rivendell
+ client:
+  driver: bridge
 
-  mongodb:
-    image: mongo:3.2.21-jessie
-    volumes:
-      - ${HOME}/data/db:/data/db
-      - ${HOME}/data/configdb:/data/configdb
-      - ${HOME}/data/o4s:/data/o4s
-    ports:
-      - "27017:27017"
-    networks:
-      - rivendell
+services:
+  client:
+     container_name: npm
+     build: .
+     volumes:
+      - "/Users/ankitgupta/Documents/wireframes/:/data"
+     ports:
+       - "3000:3000"
+     restart: unless-stopped
+     depends_on:
+       - mongo
+     networks:
+      - client
+
+  mongo:
+     container_name: mongo2
+     image: mongo:4.0.4
+     volumes:
+       - "mongo2:/data/db"
+       - "mongo2:/data/configdb"
+     ports:
+       - "27017:27017"
+     restart: unless-stopped
+     networks:
+       - client
+volumes:
+   mongo2:
