@@ -6,7 +6,6 @@ let clientConfig = {}
 
 export const main = async() => {
   clientConfig = fs.readFileSync(configPath)
-  // logger.info(`${clientConfig}`)
 
   return new Promise((resolve, reject) => {
     try {

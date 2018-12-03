@@ -3,7 +3,6 @@ import * as logger from "winston"
 export const main = (db) => {
   // initialize the collection if not 
   const clientCollection = db.collection('clientConfig')
-
   return clientCollection
 }
 

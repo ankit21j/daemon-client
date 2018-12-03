@@ -4,11 +4,13 @@ import * as mongo from "mongodb"
 
 const MongoClient = mongo.MongoClient
 
+export let db
+
 export const connect = async (connectionUri: string): Promise<mongo.Db> => {
   const client = await MongoClient.connect(connectionUri, {
     useNewUrlParser: true,
     ignoreUndefined: true
   })
-  const db = client.db()
+  db = client.db()
   return db
 }

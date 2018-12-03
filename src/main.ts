@@ -13,6 +13,8 @@ import { main  as clientMain } from "./client-configurations/client-config"
 
 import { main as dbMain , insertDoc, updateDoc } from "./db-operations/client-config"
 
+import { initSkuStore } from "./populate-sku-store"
+
 const main = async () => {
   
   // connect to mongodb
@@ -33,8 +35,9 @@ const main = async () => {
     } else {
       await updateDoc(clientCollection, clientConfigObj)
     }
+    // init deficit manager
+    await initSkuStore()
   })
-
 
 }
 
