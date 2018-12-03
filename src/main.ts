@@ -6,17 +6,36 @@ import * as logger from "winston"
 
 import * as dbManager from "./db"
 
-import { clientParent } from "./event-components/client-parent-event"
-import { serverParent } from "./event-components/server-parent-event"
-
 // const connectionUri: string = "mongodb://mongo/test-client-db"
 const connectionUri: string = "mongodb://localhost:27017/test-client-db"
 
+import { main  as clientMain } from "./client-configurations/client-config"
+
+import { main as dbMain , insertDoc, updateDoc } from "./db-operations/client-config"
+
 const main = async () => {
+  
   // connect to mongodb
-  connectToMongo(connectionUri, 3)
-  clientParent()
-  serverParent()
+  const dbObject = await connectToMongo(connectionUri, 3)
+
+  let clientConfigObj = await clientMain() 
+
+  // get clientConfig collection
+  let clientCollection = await dbMain(dbObject)
+
+  // if config exists, update else insert
+  clientCollection.find({ 'authToken' : { '$exists' : true }}).toArray(async (err, items) => {
+    if(err){
+      logger.error(err)
+    }
+    if(items.length === 0){
+      await insertDoc(clientCollection, clientConfigObj)
+    } else {
+      await updateDoc(clientCollection, clientConfigObj)
+    }
+  })
+
+
 }
 
 const connectToMongo = async (uriConnect: string, retryNumber: number) => {
@@ -28,7 +47,7 @@ const connectToMongo = async (uriConnect: string, retryNumber: number) => {
       logger.error("Error! Mongo closed")
       retryMongoConnection(uriConnect, retryNumber)
     })
-    return
+    return dbConnection
   } catch (error) {
     logger.error("\n", error)
 
