@@ -2,31 +2,33 @@ import * as logger from "winston"
 
 import { db } from "./db"
 
+import { stateManager } from "./state-manager"
+import { createChannel } from "./pubsub"
+
+import { event } from "./events"
+
 import { populateSkuStore } from "./db-operations/sku-store"
 
-let clientConfig = {}
+export const initSkuStore = async(channel) => {
 
-export const initSkuStore = () => {
-  db.collection('clientConfig').find({ 'authToken' : { '$exists' : true }}).toArray(async (err, items) => {
-    if(err){
-      logger.error(err)
-    }
-    setDefaults((items))
+  let enabledSkus, enabledLines,maxPerFile
+
+  channel.pub(event.FETCH_SKUS)
+
+  channel.sub(event.SKUS_RECEIVED, skus => {
+    enabledSkus = Object.assign({}, skus)
   })
-}
 
-const setDefaults = async(req) => {
+  channel.pub(event.FETCH_LINES)
 
-  //default client config
-  clientConfig = Object.assign({}, req[0])
-  
-  let enabledSkus = clientConfig['skus']['enabledSkus']
-  let enabledLines = clientConfig['lines']['enabledLines']
+  channel.sub(event.LINES_RECEIVED, lines => {
+    enabledLines = Object.assign({}, lines)
+  })
 
-  for(let sku in enabledSkus){
-    let skuCode = enabledSkus[sku]
-    for(let lineId of enabledLines){
-      await populateSkuStore(skuCode, lineId, clientConfig['uidLimits']['maxPerFile'], clientConfig['uidLimits']['backupPerSku'])
-    }
-  }
+  channel.pub(event.FETCH_MAX_FILE_SIZE)
+
+  channel.sub(event.MAX_FILE_SIZE_RECEIVED, maxPerFile => {
+    maxPerFile = maxPerFile
+  })
+
 }

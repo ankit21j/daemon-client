@@ -15,6 +15,10 @@ import { main as dbMain , insertDoc, updateDoc } from "./db-operations/client-co
 
 import { initSkuStore } from "./populate-sku-store"
 
+import { createChannel } from "./pubsub"
+import { stateManager } from "./state-manager"
+import { initEvents } from "./default-events"
+
 const main = async () => {
   
   // connect to mongodb
@@ -35,8 +39,13 @@ const main = async () => {
     } else {
       await updateDoc(clientCollection, clientConfigObj)
     }
+
+    let jobCreationSagaChannel = createChannel()
+    stateManager(jobCreationSagaChannel)
+    
     // init deficit manager
-    await initSkuStore()
+    await initSkuStore(jobCreationSagaChannel)
+
   })
 
 }
