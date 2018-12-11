@@ -5,6 +5,9 @@ import path = require("path");
 import axios from "axios"
 import * as logger from "winston"
 
+import { insertSkuDocs,insertProductDetails } from "../db-operations/sku-store"
+
+import { skuStore } from "../interfaces/sku-store"
 
 const STATE = {
   RUNNING : "RUNNING",
@@ -17,7 +20,7 @@ let MAX_PER_REQ = 1000
 
 
 export const create = async (sku, volume, authToken, plantId ) => {
-  console.log(sku, volume, authToken, plantId)
+  // console.log(sku, volume, authToken, plantId)
 
   // lineId = stitch(lineId);
 
@@ -45,16 +48,10 @@ export const create = async (sku, volume, authToken, plantId ) => {
   }
 }
 
-const generateId = (skuCode, volume, authToken, plantId) => {
+const generateId = (sku, volume, authToken, plantId) => {
 
-  // let authToken = userSettings.authToken
-  // if(sku.code){
-  //   skuCode = sku.code
-  // }else if(sku){
-  //   skuCode = sku
-  // }
   let params = {
-    skuCode : skuCode,
+    skuCode : sku.code,
     volume : volume,
     plantUid : plantId
   }
@@ -96,93 +93,100 @@ const generateId = (skuCode, volume, authToken, plantId) => {
 // }
 
 
-export const start = async (job, onProgress) => {
+export const start = async (job, onProgress, sku, authToken) => {
   console.log(job, onProgress)
   // let csvWriter = getCsvWriter(job)
   // let writer = csvWriter[0]
   // let savePath = csvWriter[1]
 
-  // let runFlag = true;
+  let runFlag = true;
   
-  // let progress = 0 
+  let progress = 0 
+  let productDetailsArray : Array<object> = []
 
-  // for (let { value } of batches(job.volume, MAX_PER_REQ)){
+  for (let { value } of batches(job.volume, MAX_PER_REQ)){
     
-  //   try{
+    try{
 
-  //     if(runFlag){   
-  //       let productArray = await fetchProducts(job.id, value)
+      if(runFlag){   
+        let productArray = await fetchProducts(job.id, value, authToken)
 
-  //       for(let product of productArray.products) {
-  //         await initDb.insertIntoDb(job.id,job.displayId, job.sku.code, product.numericCode, job.volume)
-  //         writer.write({numericCode: product.numericCode})
-  //       }
-  //       progress += value
-  //       onProgress( { id: job.id, progress, state: progress === job.volume ? STATE.COMPLETE : STATE.RUNNING })
+        for(let product of productArray.products) {
+          let skuDoc:skuStore = {
+            jobId : job.id,
+            skuName : sku.name,
+            skuCode : sku.code,
+            numericCode : product.numericCode,
+            qrcodeData : product.qrcodeData,
+            serialNo : product.serialNo,
+            isPicked : false,
+            isUsed : false,
+            isSynced : false
+          }
+
+          productDetailsArray.push(skuDoc)
+          // writer.write({numericCode: product.numericCode})
+        }
+        progress += value
+        onProgress( { id: job.id, progress, state: progress === job.volume ? STATE.COMPLETE : STATE.RUNNING })
       
-  //       if(productArray.job.status === 'COMPLETE' || productArray.job.status === 'ABORTED' ){
-  //         console.log(productArray.job.status);
-  //         runFlag = false;
-  //         break;
-  //       }
-  //     }
-  //   } catch(error) {
-  //     // console.error(error)
-  //     let stack = new Error().stack
-  //     log.error(error , '\n' , stack)
+        if(productArray.job.status === 'COMPLETE' || productArray.job.status === 'ABORTED' ){
+          console.log(productArray.job.status);
+          runFlag = false;
+          break;
+        }
+      }
+    } catch(error) {
+      logger.error(error)
 
-  //     onProgress({ id: job.id, progress, state:STATE.ABORTED })
-  //     await initJobHistory.insertIntoDb(job.id,job.displayId, job.sku.code, job.sku.name,job.lineId,job.volume, STATE.ABORTED)
-  //     break
-  //   }
-  // }
+      onProgress({ id: job.id, progress, state:STATE.ABORTED })
+      // await initJobHistory.insertIntoDb(job.id,job.displayId, job.sku.code, job.sku.name,job.lineId,job.volume, STATE.ABORTED)
+      break
+    }
+  }
 
-  // if(progress === job.volume){
-  //   console.log('Copying file to target folder.....');
-  //   let basepath = await getBasePath()
-  //   let filepath = path.join(basepath, job.filename)
+  if(progress === job.volume){
+    console.log('Copying file to target folder.....');
+    await insertProductDetails(productDetailsArray)
 
-  //   await initJobHistory.insertIntoDb(job.id,job.displayId, job.sku.code, job.sku.name,job.lineId,job.volume, STATE.COMPLETE)
-  //   // await getAllfiles(basepath, job);
 
-  //   console.log('Source', savePath);
-  //   console.log('Target: ', filepath);
-  //   fsExtra.copy(savePath, filepath)
-  //     .then(() => console.log('File copied successfully'))
-  //     .catch(error => {
-  //       let stack = new Error().stack
-  //       log.error(error , '\n' , stack)
+    // let basepath = await getBasePath()
+    // let filepath = path.join(basepath, job.filename)
 
-  //       console.log(error)
-  //     });
+    // await initJobHistory.insertIntoDb(job.id,job.displayId, job.sku.code, job.sku.name,job.lineId,job.volume, STATE.COMPLETE)
+    // await getAllfiles(basepath, job);
+
+    // console.log('Source', savePath);
+    // console.log('Target: ', filepath);
+    // fsExtra.copy(savePath, filepath)
+    //   .then(() => console.log('File copied successfully'))
+    //   .catch(error => {
+    //     logger.error(error)
+    //   });
     
-  // }
+  }
 
   // writer.end()
-  // return job
+  return job
 }
 
 
-// const fetchProducts = async (uid, volume) => {
-//   let authToken = userSettings.authToken
+const fetchProducts = async (uid, volume, authToken) => {
 
-//   const params = {
-//     volume,
-//     uid
-//   }
-//   return Promise.resolve(
-//     axios.post(`https://app.original4sure.com/inventory/uid-job/execute`, params, { 'headers': { 'authToken': authToken }})
-//       .then(response => {
-//         return response.data.data;
-//       })
-//       .catch(error => {
-//         let stack = new Error().stack
-//         log.error(error , '\n' , stack)
-
-//         console.log(error)
-//       })
-//   )
-// }
+  const params = {
+    volume,
+    uid
+  }
+  return Promise.resolve(
+    axios.post(`https://devserver.supplytics.com/inventory/uid-job/execute`, params, { 'headers': { 'authToken': authToken }})
+      .then(response => {
+        return response.data.data;
+      })
+      .catch(error => {
+        logger.error(error)
+      })
+  )
+}
 
 function* batches(volume, batchSize) {
   let parts = Math.ceil(volume / batchSize)

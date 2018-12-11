@@ -1,5 +1,8 @@
 import * as logger from "winston"
 
+import { skuStore } from "../interfaces/sku-store"
+import { db } from "../db";
+
 
 export const createSkuStore = (db) => {
   return new Promise((resolve, reject) => {
@@ -37,13 +40,50 @@ export const getActiveBackupCount = (db, skuCode) => {
   })
 }
 
-// export const populateSkuStore = (skuCode, lineId, maxPerFile,backupPerSku ) => {
-//   console.log(skuCode, lineId, maxPerFile,backupPerSku)
+export const insertSkuDocs = (skuDoc) => {
+  if(!skuDoc.isPicked){
+    skuDoc.isPicked = false
+  }
+  if(!skuDoc.isUsed){
+    skuDoc.isUsed = false
+  }
+  if(!skuDoc.isSynced){
+    skuDoc.isSynced = false
+  }
+  if(!skuDoc.batchId){
+    skuDoc.batchId = null
+  }
+  if(!skuDoc.mfd){
+    skuDoc.mfd = null
+  }
+  if(!skuDoc.expiry){
+    skuDoc.expiry = null
+  }
 
-//   let volumeInserted = 0
-  
-//   while(volumeInserted !== backupPerSku){
-//     console.log(volumeInserted)
-//     volumeInserted += maxPerFile
-//   }  
-// }
+  console.log(skuDoc)
+
+  return new Promise((resolve, reject) => {
+    db.collection('skuStore').insertOne(skuDoc, (err, docs) => {
+      if(err){
+        logger.error(err)
+        reject(err)
+      }
+      console.log(docs)
+      resolve(docs)
+    })  
+  })
+
+}
+
+export const insertProductDetails = (doc) => {
+  return new Promise((resolve, reject) => {
+    db.collection('skuStore').insertMany(doc, (err, docs) => {
+      if(err){
+        logger.error(err)
+        reject(err)
+      }
+      // console.log()
+      resolve(docs)
+    })
+  })
+}

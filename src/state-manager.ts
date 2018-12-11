@@ -24,9 +24,8 @@ const jobCreationManager = async(channel) => {
       console.log('state manager')
       let mapSkus = {}
       let skus = await fetchEnabledSkus(db)
-
-      for( let skuName in skus){
-        mapSkus[skuName] = skus[skuName]
+      for( let sku in skus){
+        mapSkus[sku] = skus[sku]
       }
 
       channel.pub(event.SKUS_RECEIVED, mapSkus)
@@ -73,7 +72,7 @@ const jobCreationManager = async(channel) => {
     channel.pub(event.JOB_ADDED, job)
     startJob(job, (progress) => {
       channel.pub(event.JOB_PROGRESSED, progress)
-    })
+    },selectedSku, clientConfig['authToken'])
   })
 }
 
@@ -81,7 +80,6 @@ const jobListManager = channel => {
   let jobs = {}
   channel.sub(event.JOB_ADDED, job => {
     jobs[job.id] = job
-    console.log(jobs)
     channel.pub(event.UPDATE_JOB_LIST, Object.values(jobs))
   })
 

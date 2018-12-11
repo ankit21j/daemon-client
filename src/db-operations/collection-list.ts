@@ -1,6 +1,4 @@
 import * as logger from "winston"
-import { createSkuStore, findAllDocuments } from "./sku-store"
-
 
 export const checkCollection = (db, collName) => {
   return new Promise((resolve, reject) => {
@@ -9,8 +7,8 @@ export const checkCollection = (db, collName) => {
             if (collinfo) {
               resolve(true)
             }else if(!collinfo){
-              await createSkuStore(db)
-              resolve(true)
+              await createDbCollection(db, collName)
+              resolve(false)
             }
             if(err){
               logger.error(err)
@@ -20,4 +18,16 @@ export const checkCollection = (db, collName) => {
     });
 }
 
+
+export const createDbCollection = (db, collName) => {
+  return new Promise((resolve, reject) => {
+    db.createCollection(collName, (err, collection) => {
+      if(err){
+        logger.error(err)
+        reject(err)
+      }
+      resolve(collection)
+    })
+  })
+}
 

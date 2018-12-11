@@ -69,9 +69,8 @@ const populateSkuStore = async(props, channel) => {
 
   // console.log(props)
 
-  for(let skuName in props['enabledSkus']){
-    let skuStoreDocs = await computeActiveBackup(channel,db,props['enabledSkus'][skuName], props['uidLimits'])
-    // console.log(skuStoreDocs)
+  for(let sku in props['enabledSkus']){
+    let skuStoreDocs = await computeActiveBackup(channel,db,props['enabledSkus'][sku], props['uidLimits'])
   }
 
 }

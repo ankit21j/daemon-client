@@ -31,6 +31,7 @@ const main = async () => {
 
   // get clientConfig collection
   let clientCollection = await dbMain(dbObject)
+  console.log(clientConfigStatus)
 
   // if config exists, update else insert
   if(clientConfigStatus){
