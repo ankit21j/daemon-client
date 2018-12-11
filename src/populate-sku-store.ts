@@ -2,33 +2,76 @@ import * as logger from "winston"
 
 import { db } from "./db"
 
-import { stateManager } from "./state-manager"
-import { createChannel } from "./pubsub"
-
 import { event } from "./events"
 
-import { populateSkuStore } from "./db-operations/sku-store"
+import { checkCollection } from "./db-operations/collection-list"
+
+import { createSkuStore, findAllDocuments } from "./db-operations/sku-store"
+
+import { computeActiveBackup } from "./deficit-manager/compute-backup"
 
 export const initSkuStore = async(channel) => {
 
-  let enabledSkus, enabledLines,maxPerFile
+  // let enabledSkus, enabledLines,maxPerFile
+
+  let props = {
+    enabledSkus : {},
+    enabledLines : {},
+    uidLimits : {}
+  }
 
   channel.pub(event.FETCH_SKUS)
 
   channel.sub(event.SKUS_RECEIVED, skus => {
-    enabledSkus = Object.assign({}, skus)
+    props = {
+      ...props,
+      enabledSkus : Object.assign({},props.enabledSkus, skus)
+    }
   })
 
   channel.pub(event.FETCH_LINES)
 
   channel.sub(event.LINES_RECEIVED, lines => {
-    enabledLines = Object.assign({}, lines)
+    props = {
+      ...props,
+      enabledLines : Object.assign({},props.enabledLines, lines)
+    }
   })
 
-  channel.pub(event.FETCH_MAX_FILE_SIZE)
+  channel.pub(event.FETCH_UID_LIMITS)
 
-  channel.sub(event.MAX_FILE_SIZE_RECEIVED, maxPerFile => {
-    maxPerFile = maxPerFile
+  channel.sub(event.UID_LIMITS_RECEIVED, uidLimits => {
+    props = {
+      ...props,
+      // maxPerFile : maxPerFile
+      uidLimits : Object.assign({},props.uidLimits, uidLimits)
+    }
   })
+
+  setTimeout(async() =>{
+    // find respective collections and populate store
+    await populateSkuStore(props, channel)
+  },5000)
+
+}
+
+
+const populateSkuStore = async(props, channel) => {
+
+  // check if skuStore collection exists 
+  let skuStoreExists = await checkCollection(db, 'skuStore')
+
+  if(!skuStoreExists){
+    // create collection
+    await createSkuStore(db)
+    skuStoreExists = true    
+  }
+
+  // console.log(props)
+
+  for(let skuName in props['enabledSkus']){
+    let skuStoreDocs = await computeActiveBackup(channel,db,props['enabledSkus'][skuName], props['uidLimits'])
+    // console.log(skuStoreDocs)
+  }
 
 }

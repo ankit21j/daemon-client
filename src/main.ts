@@ -12,6 +12,7 @@ const connectionUri: string = "mongodb://localhost:27017/test-client-db"
 import { main  as clientMain } from "./client-configurations/client-config"
 
 import { main as dbMain , insertDoc, updateDoc } from "./db-operations/client-config"
+import { checkCollection } from "./db-operations/collection-list"
 
 import { initSkuStore } from "./populate-sku-store"
 
@@ -26,27 +27,27 @@ const main = async () => {
 
   let clientConfigObj = await clientMain() 
 
+  let clientConfigStatus = await checkCollection(dbObject, 'clientConfig')
+
   // get clientConfig collection
   let clientCollection = await dbMain(dbObject)
 
   // if config exists, update else insert
-  clientCollection.find({ 'authToken' : { '$exists' : true }}).toArray(async (err, items) => {
-    if(err){
-      logger.error(err)
-    }
-    if(items.length === 0){
-      await insertDoc(clientCollection, clientConfigObj)
-    } else {
-      await updateDoc(clientCollection, clientConfigObj)
-    }
-
+  if(clientConfigStatus){
+    await updateDoc(clientCollection, clientConfigObj)
+  }else if(!clientConfigStatus){
+    await insertDoc(clientCollection, clientConfigObj)
+    clientConfigStatus = true
+    console.log(clientConfigStatus)
+  }
+  
+  if(clientConfigStatus){
     let jobCreationSagaChannel = createChannel()
-    stateManager(jobCreationSagaChannel)
+    await stateManager(jobCreationSagaChannel)
     
     // init deficit manager
     await initSkuStore(jobCreationSagaChannel)
-
-  })
+  }
 
 }
 

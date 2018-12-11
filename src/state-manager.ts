@@ -1,5 +1,4 @@
 import { event } from "./events"
-import axios from "axios"
 
 import { create as createJob, start as startJob} from "./uid-job/job"
 
@@ -7,7 +6,7 @@ import * as logger from "winston"
 
 import { db } from "./db"
 
-import { fetchClientConfig, fetchEnabledSkus, fetchEnabledLines, fetchMaxPerFile } from "./db-operations/client-config"
+import { fetchClientConfig, fetchEnabledSkus, fetchEnabledLines, fetchUidLimits } from "./db-operations/client-config"
 
 let clientConfig
 
@@ -56,21 +55,21 @@ const jobCreationManager = async(channel) => {
     }
   })
 
-  channel.sub(event.FETCH_MAX_FILE_SIZE, async() => {
+  channel.sub(event.FETCH_UID_LIMITS, async() => {
     try {
 
-      let maxPerFile = await fetchMaxPerFile(db)
+      let uidLimits = await fetchUidLimits(db)
 
-      channel.pub(event.MAX_FILE_SIZE_RECEIVED, maxPerFile)
+      channel.pub(event.UID_LIMITS_RECEIVED, uidLimits)
     } catch (error) {
       logger.error(error)
 
-      channel.pub(event.MAX_FILE_SIZE_RECEIVED, {})
+      channel.pub(event.UID_LIMITS_RECEIVED, {})
     }
   })
 
-  channel.sub(event.ADD_JOB, async ({ selectedSku, volume, lineId }) => {
-    let job = await createJob(selectedSku, volume, lineId, clientConfig['authToken'], clientConfig['plantId'] )
+  channel.sub(event.ADD_JOB, async ({ selectedSku, volume }) => {
+    let job = await createJob(selectedSku, volume, clientConfig['authToken'], clientConfig['plantId'] )
     channel.pub(event.JOB_ADDED, job)
     startJob(job, (progress) => {
       channel.pub(event.JOB_PROGRESSED, progress)
@@ -82,6 +81,7 @@ const jobListManager = channel => {
   let jobs = {}
   channel.sub(event.JOB_ADDED, job => {
     jobs[job.id] = job
+    console.log(jobs)
     channel.pub(event.UPDATE_JOB_LIST, Object.values(jobs))
   })
 

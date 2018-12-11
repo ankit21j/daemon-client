@@ -1,7 +1,9 @@
 import * as moment  from "moment";
 import fs = require("fs");
 import path = require("path");
-import axios = require('axios');
+
+import axios from "axios"
+import * as logger from "winston"
 
 
 const STATE = {
@@ -14,12 +16,12 @@ const TIME_FORMAT = "YYYY-MM-DD-hh:mm:ss"
 let MAX_PER_REQ = 1000
 
 
-export const create = async (sku, volume, lineId, authToken, plantId ) => {
-  // console.log(sku, volume, lineId, authToken, plantId)
+export const create = async (sku, volume, authToken, plantId ) => {
+  console.log(sku, volume, authToken, plantId)
 
   // lineId = stitch(lineId);
 
-  // let id = await generateId(sku, volume, lineId)
+  let id = await generateId(sku, volume, authToken, plantId)
   // let displayId = id.split('-')[0];
   // let createdAt = moment().format(TIME_FORMAT)
   // let filename = [[ displayId,lineId, sku.code, volume].join('_'), "txt"].join(".")
@@ -29,53 +31,45 @@ export const create = async (sku, volume, lineId, authToken, plantId ) => {
   // // writer.pipe(fs.createWriteStream(filepath, {flags: 'a'}));
 
 
-  // return {
-  //   id,
-  //   displayId,
-  //   createdAt,
-  //   sku,
-  //   volume,
-  //   progress: 0,
-  //   state: STATE.RUNNING,
-  //   filename,
-  //   filepath,
-  //   lineId,
-  // }
+  return {
+    id,
+    // displayId,
+    // createdAt,
+    sku,
+    volume,
+    progress: 0,
+    state: STATE.RUNNING,
+    // filename,
+    // filepath,
+    // lineId,
+  }
 }
 
-// const generateId = (sku, volume, lineId) => {
+const generateId = (skuCode, volume, authToken, plantId) => {
 
-//   let authToken = userSettings.authToken
-//   if(sku.code){
-//     skuCode = sku.code
-//   }else if(sku){
-//     skuCode = sku
-//   }
-//   params = {
-//     skuCode : skuCode,
-//     volume : volume,
-//     meta : {
-//       lineId : lineId
-//     },
-//     "plantUid" : userSettings.plantId
-//   }
+  // let authToken = userSettings.authToken
+  // if(sku.code){
+  //   skuCode = sku.code
+  // }else if(sku){
+  //   skuCode = sku
+  // }
+  let params = {
+    skuCode : skuCode,
+    volume : volume,
+    plantUid : plantId
+  }
 
-//   return Promise.resolve(
-//     axios.post('https://app.original4sure.com/inventory/uid-job',params, { 'headers': { 'authToken': authToken } })
-//     .then(function (response) {
-//       return response.data.data.uid;
-//     })
-//     .catch(function (error) {
+  return Promise.resolve(
+    axios.post('https://devserver.supplytics.com/inventory/uid-job',params, { 'headers': { 'authToken': authToken } })
+    .then(function (response) {
+      return response.data.data.uid;
+    })
+    .catch(function (error) {
+      logger.error(error)
+    })
+  )
 
-//       let stack = new Error().stack
-//       log.error(error , '\n' , stack)
-
-//       alert(error);
-//       console.log(error);
-//     })
-//   )
-
-// }
+}
 
 // const getCsvWriter = (job) => {
 //   let writer = csvWriter({sendHeaders: false})
@@ -103,6 +97,7 @@ export const create = async (sku, volume, lineId, authToken, plantId ) => {
 
 
 export const start = async (job, onProgress) => {
+  console.log(job, onProgress)
   // let csvWriter = getCsvWriter(job)
   // let writer = csvWriter[0]
   // let savePath = csvWriter[1]
