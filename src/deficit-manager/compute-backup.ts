@@ -25,8 +25,9 @@ export const computeActiveBackup = async(channel, db, sku, uidLimits, enabledLin
 
     channel.pub(event.ADD_JOB, data) 
 
-  }else{
-    console.log('deliver files')
+  }
+  if(skuBackupCount >= backupPerSku){
+    console.log('deliver files to buffer')
 
     // check buffer dir and write to file
     let fileNames:Array<string> = []
@@ -77,7 +78,7 @@ const generateFiles = async(fileName, maxPerFile) => {
   let dir = PATH_VARIABLES.buffer
 
   if (!fs.existsSync(dir)){
-      fs.mkdirSync(dir);
+    fs.mkdirSync(dir);
   }
 
   let savePath = dir + '/' + outputFileName
@@ -94,7 +95,6 @@ const generateFiles = async(fileName, maxPerFile) => {
     unusedIds.push(unusedDocs[key]['_id'])
   }
 
-  console.log(unusedIds)
   await updateBatchId(unusedIds, batchId)
 }
 
