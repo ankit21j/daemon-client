@@ -10,7 +10,8 @@ export interface skuStore {
   batchId? : string,
   mfd? : number,
   expiry? : number,
-  isPicked : boolean,
-  isUsed : boolean,
-  isSynced : boolean
+  picked : boolean,
+  delivered : boolean,
+  consumed : boolean,
+  synced : boolean
 }

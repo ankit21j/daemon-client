@@ -20,7 +20,6 @@ let MAX_PER_REQ = 1000
 
 
 export const create = async (sku, volume, authToken, plantId ) => {
-  // console.log(sku, volume, authToken, plantId)
 
   let id = await generateId(sku, volume, authToken, plantId)
 
@@ -53,31 +52,6 @@ const generateId = (sku, volume, authToken, plantId) => {
 
 }
 
-// const getCsvWriter = (job) => {
-//   let writer = csvWriter({sendHeaders: false})
-  
-//   // create directory to store the csv files while in progress which will be copied after completion
-//   let dir = app.getPath('userData') + '/o4s-client-log/';
-
-//   if (!fs.existsSync(dir)){
-//       fs.mkdirSync(dir);
-//   }
-
-//   let savePath = path.join(dir, job.filename);
-
-//   try {
-//     writer.pipe(fs.createWriteStream(savePath, {flags: 'w'}))
-//     return [writer,savePath]    
-//   } catch (error) {
-//     let stack = new Error().stack
-//     log.error(error , '\n' , stack)
-
-//     // alert(error);
-//   }
-
-// }
-
-
 export const start = async (job, onProgress, sku, authToken) => {
 
   let runFlag = true;
@@ -93,16 +67,17 @@ export const start = async (job, onProgress, sku, authToken) => {
         let productArray = await fetchProducts(job.id, value, authToken)
 
         for(let product of productArray.products) {
-          let skuDoc:skuStore = {
+          let skuDoc : skuStore = {
             jobId : job.id,
             skuName : sku.name,
             skuCode : sku.code,
             numericCode : product.numericCode,
             qrcodeData : product.qrcodeData,
             serialNo : product.serialNo,
-            isPicked : false,
-            isUsed : false,
-            isSynced : false
+            picked : false,
+            delivered : false,
+            consumed : false,
+            synced : false
           }
 
           await insertSkuDocs(skuDoc)
@@ -112,7 +87,6 @@ export const start = async (job, onProgress, sku, authToken) => {
         onProgress( { id: job.id, progress, state: progress === job.volume ? STATE.COMPLETE : STATE.RUNNING })
       
         if(productArray.job.status === 'COMPLETE' || productArray.job.status === 'ABORTED' ){
-          console.log(productArray.job.status);
           runFlag = false;
           break;
         }
@@ -127,26 +101,9 @@ export const start = async (job, onProgress, sku, authToken) => {
   }
 
   if(progress === job.volume){
-    console.log('Copying file to target folder.....');
-
-
-    // let basepath = await getBasePath()
-    // let filepath = path.join(basepath, job.filename)
-
-    // await initJobHistory.insertIntoDb(job.id,job.displayId, job.sku.code, job.sku.name,job.lineId,job.volume, STATE.COMPLETE)
-    // await getAllfiles(basepath, job);
-
-    // console.log('Source', savePath);
-    // console.log('Target: ', filepath);
-    // fsExtra.copy(savePath, filepath)
-    //   .then(() => console.log('File copied successfully'))
-    //   .catch(error => {
-    //     logger.error(error)
-    //   });
-    
+    console.log('job complete....')
   }
 
-  // writer.end()
   return job
 }
 

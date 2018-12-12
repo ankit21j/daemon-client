@@ -30,7 +30,7 @@ export const findAllDocuments = (db) => {
 
 export const getActiveBackupCount = (db, skuCode) => {
   return new Promise((resolve, reject) => {
-    db.collection('skuStore').find({'skuCode' : skuCode, 'isPicked' : false, 'isUsed' : false, 'isSynced' : false}).count({},(err, count) => {
+    db.collection('skuStore').find({'skuCode' : skuCode, 'picked' : false, 'delivered' : false, 'consumed' : false, 'synced' : false}).count({},(err, count) => {
       if(err){
         logger.error
         reject(err)
@@ -55,7 +55,7 @@ export const insertSkuDocs = (data) => {
 
 export const findUnusedDocs = (skuCode, maxPerFile) => {
   return new Promise((resolve, reject) => {
-    db.collection('skuStore').find({'skuCode' : skuCode, 'isPicked' : false, 'isUsed' : false, 'isSynced' : false}).limit(maxPerFile).toArray((err, docs) => {
+    db.collection('skuStore').find({'skuCode' : skuCode, 'picked' : false, 'delivered' : false, 'consumed' : false, 'synced' : false}).limit(maxPerFile).toArray((err, docs) => {
       if(err){
         logger.error(err)
         reject(err)
@@ -67,7 +67,19 @@ export const findUnusedDocs = (skuCode, maxPerFile) => {
 
 export const updateBatchId = (mongoIdArray, batchId) => {
   return new Promise((resolve, reject) => {
-    db.collection('skuStore').update({'_id' : { '$in' : mongoIdArray }}, { '$set' : { 'batchId' : batchId, 'isPicked' : true }}, {'multi' : true},(err, docs) => {
+    db.collection('skuStore').update({'_id' : { '$in' : mongoIdArray }}, { '$set' : { 'batchId' : batchId, 'picked' : true }}, {'multi' : true},(err, docs) => {
+      if(err){
+        logger.error(err)
+        reject(err)
+      }
+      resolve(docs)
+    })
+  })
+}
+
+export const updateDeliveredStatus = (batchId) => {
+  return new Promise((resolve, reject) => {
+    db.collection('skuStore').update({'batchId' : batchId, 'picked' : true}, { '$set' : { 'delivered' : true }}, {'multi' : true},(err, docs) => {
       if(err){
         logger.error(err)
         reject(err)

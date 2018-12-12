@@ -20,6 +20,8 @@ import { createChannel } from "./pubsub"
 import { stateManager } from "./state-manager"
 import { initEvents } from "./default-events"
 
+import { watcherMain } from "./delivery-manager/index"
+
 const main = async () => {
   
   // connect to mongodb
@@ -48,7 +50,11 @@ const main = async () => {
     
     // init deficit manager
     await initSkuStore(jobCreationSagaChannel)
+  
+    await watcherMain(jobCreationSagaChannel)
+
   }
+
 
 }
 
