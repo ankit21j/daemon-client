@@ -30,7 +30,7 @@ export const findAllDocuments = (db) => {
 
 export const getActiveBackupCount = (db, skuCode) => {
   return new Promise((resolve, reject) => {
-    db.collection('skuStore').find({'skuCode' : skuCode, isPicked : false, isUsed : false, isSynced : false}).count({},(err, count) => {
+    db.collection('skuStore').find({'skuCode' : skuCode, 'isPicked' : false, 'isUsed' : false, 'isSynced' : false}).count({},(err, count) => {
       if(err){
         logger.error
         reject(err)
@@ -40,49 +40,38 @@ export const getActiveBackupCount = (db, skuCode) => {
   })
 }
 
-export const insertSkuDocs = (skuDoc) => {
-  if(!skuDoc.isPicked){
-    skuDoc.isPicked = false
-  }
-  if(!skuDoc.isUsed){
-    skuDoc.isUsed = false
-  }
-  if(!skuDoc.isSynced){
-    skuDoc.isSynced = false
-  }
-  if(!skuDoc.batchId){
-    skuDoc.batchId = null
-  }
-  if(!skuDoc.mfd){
-    skuDoc.mfd = null
-  }
-  if(!skuDoc.expiry){
-    skuDoc.expiry = null
-  }
-
-  console.log(skuDoc)
-
+export const insertSkuDocs = (data) => {
   return new Promise((resolve, reject) => {
-    db.collection('skuStore').insertOne(skuDoc, (err, docs) => {
+    db.collection('skuStore').insertOne(data, (err, docs) => {
       if(err){
         logger.error(err)
         reject(err)
       }
-      console.log(docs)
       resolve(docs)
     })  
   })
 
 }
 
-export const insertProductDetails = (doc) => {
+export const findUnusedDocs = (skuCode, maxPerFile) => {
   return new Promise((resolve, reject) => {
-    db.collection('skuStore').insertMany(doc, (err, docs) => {
+    db.collection('skuStore').find({'skuCode' : skuCode, 'isPicked' : false, 'isUsed' : false, 'isSynced' : false}).limit(maxPerFile).toArray((err, docs) => {
       if(err){
         logger.error(err)
         reject(err)
       }
-      // console.log()
+      resolve(docs)
+    })
+  })
+}
+
+export const updateBatchId = (mongoIdArray, batchId) => {
+  return new Promise((resolve, reject) => {
+    db.collection('skuStore').update({'_id' : { '$in' : mongoIdArray }}, { '$set' : { 'batchId' : batchId, 'isPicked' : true }}, {'multi' : true},(err, docs) => {
+      if(err){
+        logger.error(err)
+        reject(err)
+      }
       resolve(docs)
     })
   })

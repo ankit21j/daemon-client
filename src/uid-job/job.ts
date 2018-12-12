@@ -5,7 +5,7 @@ import path = require("path");
 import axios from "axios"
 import * as logger from "winston"
 
-import { insertSkuDocs,insertProductDetails } from "../db-operations/sku-store"
+import { insertSkuDocs } from "../db-operations/sku-store"
 
 import { skuStore } from "../interfaces/sku-store"
 
@@ -22,29 +22,14 @@ let MAX_PER_REQ = 1000
 export const create = async (sku, volume, authToken, plantId ) => {
   // console.log(sku, volume, authToken, plantId)
 
-  // lineId = stitch(lineId);
-
   let id = await generateId(sku, volume, authToken, plantId)
-  // let displayId = id.split('-')[0];
-  // let createdAt = moment().format(TIME_FORMAT)
-  // let filename = [[ displayId,lineId, sku.code, volume].join('_'), "txt"].join(".")
-  // let basepath = await getBasePath()
-  // let filepath = path.join(basepath, filename)
-  // let writer = csvWriter()
-  // // writer.pipe(fs.createWriteStream(filepath, {flags: 'a'}));
-
 
   return {
     id,
-    // displayId,
-    // createdAt,
     sku,
     volume,
     progress: 0,
     state: STATE.RUNNING,
-    // filename,
-    // filepath,
-    // lineId,
   }
 }
 
@@ -94,15 +79,11 @@ const generateId = (sku, volume, authToken, plantId) => {
 
 
 export const start = async (job, onProgress, sku, authToken) => {
-  console.log(job, onProgress)
-  // let csvWriter = getCsvWriter(job)
-  // let writer = csvWriter[0]
-  // let savePath = csvWriter[1]
 
   let runFlag = true;
   
   let progress = 0 
-  let productDetailsArray : Array<object> = []
+  // let productDetailsArray : Array<object> = []
 
   for (let { value } of batches(job.volume, MAX_PER_REQ)){
     
@@ -124,8 +105,8 @@ export const start = async (job, onProgress, sku, authToken) => {
             isSynced : false
           }
 
-          productDetailsArray.push(skuDoc)
-          // writer.write({numericCode: product.numericCode})
+          await insertSkuDocs(skuDoc)
+          // productDetailsArray.push(skuDoc)
         }
         progress += value
         onProgress( { id: job.id, progress, state: progress === job.volume ? STATE.COMPLETE : STATE.RUNNING })
@@ -147,7 +128,6 @@ export const start = async (job, onProgress, sku, authToken) => {
 
   if(progress === job.volume){
     console.log('Copying file to target folder.....');
-    await insertProductDetails(productDetailsArray)
 
 
     // let basepath = await getBasePath()
