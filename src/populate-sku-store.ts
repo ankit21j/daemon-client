@@ -12,8 +12,6 @@ import { computeActiveBackup } from "./deficit-manager/compute-backup"
 
 export const initSkuStore = async(channel) => {
 
-  // let enabledSkus, enabledLines,maxPerFile
-
   let props = {
     enabledSkus : {},
     enabledLines : {},
