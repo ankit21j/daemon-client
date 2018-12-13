@@ -4,16 +4,15 @@ import * as logger from "winston"
 const configPath = "/Users/ankitgupta/Documents/test-vj/client-config.json"
 let clientConfig = {}
 
-export const main = async() => {
+export const main = async () => {
   clientConfig = fs.readFileSync(configPath)
 
   return new Promise((resolve, reject) => {
     try {
-      resolve(clientConfig)      
+      resolve(clientConfig)
     } catch (error) {
       logger.error(error)
       reject(error)
     }
   })
 }
-

@@ -17,4 +17,3 @@ export const event = {
   SKU_STORE_CHANGED: "sku-store-changed",
   SKU_BACKUP_AVAILABLE: "sku-backup-available"
 }
-

@@ -10,12 +10,11 @@ import { createSkuStore } from "./db-operations/sku-store"
 
 import { computeActiveBackup } from "./deficit-manager/compute-backup"
 
-export const initSkuStore = async(channel) => {
-
+export const initSkuStore = async channel => {
   let props = {
-    enabledSkus : {},
-    enabledLines : {},
-    uidLimits : {}
+    enabledSkus: {},
+    enabledLines: {},
+    uidLimits: {}
   }
 
   channel.pub(event.FETCH_SKUS)
@@ -23,7 +22,7 @@ export const initSkuStore = async(channel) => {
   channel.sub(event.SKUS_RECEIVED, skus => {
     props = {
       ...props,
-      enabledSkus : Object.assign({},props.enabledSkus, skus)
+      enabledSkus: Object.assign({}, props.enabledSkus, skus)
     }
   })
 
@@ -32,7 +31,7 @@ export const initSkuStore = async(channel) => {
   channel.sub(event.LINES_RECEIVED, lines => {
     props = {
       ...props,
-      enabledLines : Object.assign({},props.enabledLines, lines)
+      enabledLines: Object.assign({}, props.enabledLines, lines)
     }
   })
 
@@ -42,30 +41,32 @@ export const initSkuStore = async(channel) => {
     props = {
       ...props,
       // maxPerFile : maxPerFile
-      uidLimits : Object.assign({},props.uidLimits, uidLimits)
+      uidLimits: Object.assign({}, props.uidLimits, uidLimits)
     }
   })
 
-  setTimeout(async() => {
+  setTimeout(async () => {
     // find respective collections and populate store
     await populateSkuStore(props, channel)
-  },5000)
+  }, 5000)
 }
 
+const populateSkuStore = async (props, channel) => {
+  // check if skuStore collection exists
+  let skuStoreExists = await checkCollection("skuStore")
 
-const populateSkuStore = async(props, channel) => {
-
-  // check if skuStore collection exists 
-  let skuStoreExists = await checkCollection('skuStore')
-
-  if(!skuStoreExists){
+  if (!skuStoreExists) {
     // create collection
-    await createSkuStore(db)
-    skuStoreExists = true    
+    await createSkuStore()
+    skuStoreExists = true
   }
 
-  for(let sku in props['enabledSkus']){
-    let skuStoreDocs = await computeActiveBackup(channel,db,props['enabledSkus'][sku], props['uidLimits'], props['enabledLines'])
+  for (const sku of Object.keys(props.enabledSkus)) {
+    const skuStoreDocs = await computeActiveBackup(
+      channel,
+      props.enabledSkus[sku],
+      props.uidLimits,
+      props.enabledLines
+    )
   }
-
 }

@@ -11,29 +11,27 @@ const pickupWatcher = chokidar.watch(pickupPath, {
   ignored: /(^|[\/\\])\../,
   depth: 0,
   persistent: true,
-  ignoreInitial: true,    //ignore events on files present beforehand
-  cwd: pickupPath         //defines the file base location to get only the affected file
+  ignoreInitial: true, //ignore events on files present beforehand
+  cwd: pickupPath //defines the file base location to get only the affected file
 })
 
 const reportingWatcher = chokidar.watch(reportingPath, {
   ignored: /(^|[\/\\])\../,
   depth: 0,
   persistent: true,
-  ignoreInitial: true,    //ignore events on files present beforehand
-  cwd: reportingPath      //defines the file base location to get only the affected file
+  ignoreInitial: true, //ignore events on files present beforehand
+  cwd: reportingPath //defines the file base location to get only the affected file
 })
-
 
 // Pickup watcher
 pickupWatcher
-  .on('ready', () => {
+  .on("ready", () => {
     // emit an event to generate missing files
     EventBus.pickupListAllFiles(pickupPath)
       .then(() => {
-
+        // logger.info("do nothing")
       })
-      .catch((error) => 
-      logger.error(error))
+      .catch(error => logger.error(error))
   })
   .on("add", path => {
     EventBus.pickupFileAdded(path)
@@ -46,7 +44,7 @@ pickupWatcher
   })
   .on("unlink", path => {
     EventBus.pickupFileRemoved(path)
-      .then(({lineId, skuCode}) => {
+      .then(({ lineId, skuCode }) => {
         // file removed, add a new file with lineId and skuCode
         logger.info(`New file lineId - ${lineId}; skucode - ${skuCode}`)
       })
@@ -54,7 +52,6 @@ pickupWatcher
         logger.error(error)
       })
   })
-
 
 // Reporting watcher
 reportingWatcher
@@ -79,20 +76,17 @@ reportingWatcher
   .on("unlink", path => {
     EventBus.reportingFileRemoved(path)
       .then(() => {
-        // file removed, add a new file  
+        // file removed, add a new file
       })
       .catch(error => {
         logger.error(error)
       })
   })
 
+// Delivered Watcher
 
-  // Delivered Watcher
+// Buffer watcher
 
-
-  // Buffer watcher
-
-
-  export const watcherMain = () => {
-    logger.info('watcher main')
-  }
+export const watcherMain = () => {
+  logger.info("watcher main")
+}

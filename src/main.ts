@@ -9,9 +9,13 @@ import * as dbManager from "./db"
 // const connectionUri: string = "mongodb://mongo/test-client-db"
 const connectionUri: string = "mongodb://localhost:27017/test-client-db"
 
-import { main  as clientMain } from "./client-configurations/client-config"
+import { main as clientMain } from "./client-configurations/client-config"
 
-import { main as dbMain , insertDoc, updateDoc } from "./db-operations/client-config"
+import {
+  main as dbMain,
+  insertDoc,
+  updateDoc
+} from "./db-operations/client-config"
 import { checkCollection } from "./db-operations/collection-list"
 
 import { initSkuStore } from "./populate-sku-store"
@@ -24,35 +28,34 @@ import { POLLING_INTERVALS } from "./constants"
 import { watcherMain } from "./delivery-manager/index"
 
 const main = async () => {
-  
   // connect to mongodb
   const dbObject = await connectToMongo(connectionUri, 3)
 
-  let clientConfigObj = await clientMain() 
+  const clientConfigObj = await clientMain()
 
-  let clientConfigStatus = await checkCollection('clientConfig')
+  let clientConfigStatus = await checkCollection("clientConfig")
 
   // get clientConfig collection
-  let clientCollection = await dbMain(dbObject)
-  console.log(clientConfigStatus)
+  const clientCollection = await dbMain(dbObject)
+  // logger.info(clientConfigStatus)
 
   // if config exists, update else insert
-  if(clientConfigStatus){
+  if (clientConfigStatus) {
     await updateDoc(clientCollection, clientConfigObj)
-  }else if(!clientConfigStatus){
+  } else if (!clientConfigStatus) {
     await insertDoc(clientCollection, clientConfigObj)
     clientConfigStatus = true
-    console.log(clientConfigStatus)
+    // logger.info(clientConfigStatus)
   }
 
-  let jobCreationSagaChannel = createChannel()
-  
+  const jobCreationSagaChannel = createChannel()
+
   await stateManager(jobCreationSagaChannel)
   await initSkuStoreScheduler(clientConfigStatus, jobCreationSagaChannel)
 
   await watcherMain(jobCreationSagaChannel)
 
-  await scheduleHealthCheck(clientConfigStatus, jobCreationSagaChannel)
+  await scheduleDbWatcher(clientConfigStatus, jobCreationSagaChannel)
 }
 
 const connectToMongo = async (uriConnect: string, retryNumber: number) => {
@@ -82,22 +85,27 @@ const retryMongoConnection = (uriConnect, retryNumber) => {
   }
 }
 
-
-const initSkuStoreScheduler = async(clientConfigStatus, jobCreationSagaChannel) => {
-  if(clientConfigStatus){
+const initSkuStoreScheduler = async (
+  clientConfigStatus,
+  jobCreationSagaChannel
+) => {
+  if (clientConfigStatus) {
     // await stateManager(jobCreationSagaChannel)
-    
+
     // init deficit manager
     await initSkuStore(jobCreationSagaChannel)
   }
 }
 
-const scheduleHealthCheck = async(clientConfigStatus, jobCreationSagaChannel) => {  
-  setTimeout(async() => {
-    console.log('---- wait 2 mins ----')
+const scheduleDbWatcher = async (
+  clientConfigStatus,
+  jobCreationSagaChannel
+) => {
+  setTimeout(async () => {
+    logger.info("---- wait 2 mins ----")
     await initSkuStoreScheduler(clientConfigStatus, jobCreationSagaChannel)
-    scheduleHealthCheck(clientConfigStatus, jobCreationSagaChannel);
-  }, POLLING_INTERVALS.sku_store_watcher);
+    scheduleDbWatcher(clientConfigStatus, jobCreationSagaChannel)
+  }, POLLING_INTERVALS.sku_store_watcher)
 }
 
 main()

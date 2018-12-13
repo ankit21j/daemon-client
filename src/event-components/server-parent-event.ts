@@ -4,8 +4,6 @@ import { EventBus } from "./server-event-bus"
 
 const pickupForked = fork(`./src/forked-processes/pickup-child/pickup-child`)
 
-
-
 export const serverParent = () => {
   logger.info("server parent")
 }
@@ -14,9 +12,7 @@ export const serverParent = () => {
 
 // list all files inside pickup folder, and generate missing files
 EventBus.pickupListAllFiles.on(pickupLocation => {
-  
   pickupForked.send(pickupLocation)
-  
 })
 
 // file added to pickup dir
@@ -25,24 +21,21 @@ EventBus.pickupFileAdded.on(fileName => {
 })
 
 // file removed to pickup dir
-EventBus.pickupFileRemoved.on((fileName) => {
+EventBus.pickupFileRemoved.on(fileName => {
   logger.info(`${fileName} removed`)
   return new Promise((resolve, reject) => {
     try {
-      let fileNameArray = fileName.split('_')
-      let lineId = fileNameArray[1]
-      let skuCode = fileNameArray[2]
+      const fileNameArray = fileName.split("_")
+      const lineId = fileNameArray[1]
+      const skuCode = fileNameArray[2]
       logger.info(`${fileNameArray}`)
 
-      resolve({lineId, skuCode})
-
+      resolve({ lineId, skuCode })
     } catch (error) {
       reject(error)
     }
   })
-
 })
-
 
 // file added to reporting dir
 EventBus.reportingFileAdded.on(fileName => {
