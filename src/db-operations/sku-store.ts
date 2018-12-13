@@ -28,7 +28,7 @@ export const findAllDocuments = (db) => {
   })
 }
 
-export const getActiveBackupCount = (db, skuCode) => {
+export const getActiveBackupCount = (skuCode) => {
   return new Promise((resolve, reject) => {
     db.collection('skuStore').find({'skuCode' : skuCode, 'picked' : false, 'delivered' : false, 'consumed' : false, 'synced' : false}).count({},(err, count) => {
       if(err){

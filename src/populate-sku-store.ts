@@ -46,31 +46,23 @@ export const initSkuStore = async(channel) => {
     }
   })
 
-  setTimeout(async() =>{
+  setTimeout(async() => {
     // find respective collections and populate store
     await populateSkuStore(props, channel)
   },5000)
-
-  channel.sub(event.SKU_STORE_CHANGED, async() => {
-    console.log('SKU Store change event')
-    await populateSkuStore(props, channel)
-  })
-
 }
 
 
 const populateSkuStore = async(props, channel) => {
 
   // check if skuStore collection exists 
-  let skuStoreExists = await checkCollection(db, 'skuStore')
+  let skuStoreExists = await checkCollection('skuStore')
 
   if(!skuStoreExists){
     // create collection
     await createSkuStore(db)
     skuStoreExists = true    
   }
-
-  // console.log(props)
 
   for(let sku in props['enabledSkus']){
     let skuStoreDocs = await computeActiveBackup(channel,db,props['enabledSkus'][sku], props['uidLimits'], props['enabledLines'])

@@ -72,6 +72,14 @@ const jobCreationManager = async(channel) => {
     channel.pub(event.JOB_ADDED, job)
     startJob(job, (progress) => {
       channel.pub(event.JOB_PROGRESSED, progress)
+
+      if(progress.state === 'COMPLETE'){
+        let data = {
+          selectedSku : selectedSku,
+        }
+        channel.pub(event.SKU_BACKUP_AVAILABLE, data)
+      }
+
     },selectedSku, clientConfig['authToken'])
 
   })

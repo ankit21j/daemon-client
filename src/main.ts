@@ -30,7 +30,7 @@ const main = async () => {
 
   let clientConfigObj = await clientMain() 
 
-  let clientConfigStatus = await checkCollection(dbObject, 'clientConfig')
+  let clientConfigStatus = await checkCollection('clientConfig')
 
   // get clientConfig collection
   let clientCollection = await dbMain(dbObject)
@@ -44,20 +44,10 @@ const main = async () => {
     clientConfigStatus = true
     console.log(clientConfigStatus)
   }
-  
-  // if(clientConfigStatus){
-  //   let jobCreationSagaChannel = createChannel()
-  //   await stateManager(jobCreationSagaChannel)
-    
-  //   // init deficit manager
-  //   await initSkuStore(jobCreationSagaChannel)
-  
-  //   await watcherMain(jobCreationSagaChannel)
-
-  // }
 
   let jobCreationSagaChannel = createChannel()
-
+  
+  await stateManager(jobCreationSagaChannel)
   await initSkuStoreScheduler(clientConfigStatus, jobCreationSagaChannel)
 
   await watcherMain(jobCreationSagaChannel)
@@ -95,7 +85,7 @@ const retryMongoConnection = (uriConnect, retryNumber) => {
 
 const initSkuStoreScheduler = async(clientConfigStatus, jobCreationSagaChannel) => {
   if(clientConfigStatus){
-    await stateManager(jobCreationSagaChannel)
+    // await stateManager(jobCreationSagaChannel)
     
     // init deficit manager
     await initSkuStore(jobCreationSagaChannel)

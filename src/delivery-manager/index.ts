@@ -9,7 +9,7 @@ import { event } from "../events"
 
 import { PATH_VARIABLES } from "../constants"
 
-import { generateFiles } from "../deficit-manager/compute-backup"
+import { generateFiles,checkBackupThreshold } from "../deficit-manager/compute-backup"
 
 let props = {
   enabledSkus : {},
@@ -29,26 +29,13 @@ const pickupWatcher = chokidar.watch(PATH_VARIABLES.pickup, {
 
   export const watcherMain = (channel) => {
 
-    // channel.pub(event.FETCH_SKUS)
-  
-    // channel.sub(event.SKUS_RECEIVED, skus => {
-    //   props = {
-    //     ...props,
-    //     enabledSkus : Object.assign({},props.enabledSkus, skus)
-    //   }
-    // })
-  
-    // channel.pub(event.FETCH_LINES)
-  
-    // channel.sub(event.LINES_RECEIVED, lines => {
-    //   props = {
-    //     ...props,
-    //     enabledLines : Object.assign({},props.enabledLines, lines)
-    //   }
-    // })
-  
-    // channel.pub(event.FETCH_UID_LIMITS)
-  
+    channel.sub(event.LINES_RECEIVED, enabledLines => {
+      props = {
+        ...props,
+        enabledLines : Object.assign({},props.enabledLines, enabledLines)
+      }
+    })
+
     channel.sub(event.UID_LIMITS_RECEIVED, uidLimits => {
       props = {
         ...props,
@@ -69,20 +56,19 @@ const pickupWatcher = chokidar.watch(PATH_VARIABLES.pickup, {
     channel.sub(event.SKU_BACKUP_AVAILABLE, async(data) => {
       console.log('sku backup available')
       console.log(data)
-      await listFilesOnReady(channel, data.selectedSku, data.enabledLines)
+      await listFilesOnReady(channel, data.selectedSku)
     }) 
 
   }
 
-  const listFilesOnReady = async(channel, sku, enabledLines) => {
+  const listFilesOnReady = async(channel, sku) => {
     let fileNames:Array<string> = []
     // for(let sku in props['enabledSkus']){
-      for(let line in enabledLines){
+      for(let line in props['enabledLines']){
         // let filename = props['enabledLines'][line] + '_' + props['enabledSkus'][sku]['code']
-        let filename = enabledLines[line] + '_' + sku['code']
+        let filename = props['enabledLines'][line] + '_' + sku['code']
         fileNames.push(filename)
       }  
-    // }
     // let basepath = PATH_VARIABLES.pickup
     let missingFiles = await checkAllPresentFiles(fileNames, basepath)
 
@@ -120,22 +106,22 @@ const pickupWatcher = chokidar.watch(PATH_VARIABLES.pickup, {
     }
   }
 
-  const splitFileName = (fileName) => {
-    return new Promise((resolve, reject) => {
-      let fileNameArray = fileName.split('_')
-    })
-  }
-
-
   const deficitFileManager = async(fileName,channel) => {
 
-    let srcPath = await generateFiles(fileName, props['uidLimits']['maxPerFile'],channel)
+    let backUpStatus = await checkBackupThreshold(fileName, props['uidLimits']['maxPerFile'])
 
-    if(srcPath){
-      let destPathArray: Array<string> = String(srcPath).split('/')
-      let destPath = basepath + '/' + destPathArray[destPathArray.length - 1]
+    if(backUpStatus){
+      let srcPath = await generateFiles(fileName, props['uidLimits']['maxPerFile'],channel)
 
-      console.log(srcPath, destPath)
-      await copyFiles(srcPath, destPath)
+      if(srcPath){
+        let destPathArray: Array<string> = String(srcPath).split('/')
+        let destPath = basepath + '/' + destPathArray[destPathArray.length - 1]
+  
+        console.log(srcPath, destPath)
+        await copyFiles(srcPath, destPath)
+      }
+    }else{
+      console.log('Cannot generate new files as backup is less than maxPerFile!')
     }
+
   }

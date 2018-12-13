@@ -16,7 +16,7 @@ export const computeActiveBackup = async(channel, db, sku, uidLimits, enabledLin
 
   let backupPerSku = uidLimits['backupPerSku']
   let maxPerFile = uidLimits['maxPerFile']
-  let skuBackupCount = await getActiveBackupCount(db, sku['code'])
+  let skuBackupCount = await getActiveBackupCount(sku['code'])
 
   if(skuBackupCount < backupPerSku){
     console.log('populate sku store')
@@ -26,51 +26,15 @@ export const computeActiveBackup = async(channel, db, sku, uidLimits, enabledLin
     let data = { selectedSku: sku, volume: requiredVol}
 
     await channel.pub(event.ADD_JOB, data) 
-    console.log('here')
+    
   }
   if(skuBackupCount >= backupPerSku){
-    console.log('deliver files to buffer')
     let data = {
       selectedSku : sku,
-      enabledLines : enabledLines
     }
     channel.pub(event.SKU_BACKUP_AVAILABLE, data)
-
-    // check buffer dir and write to file
-    // let fileNames:Array<string> = []
-    // for(let line in enabledLines){
-    //   let filename = enabledLines[line] + '_' + sku.code
-    //   fileNames.push(filename)
-    // }
-
-    // let basepath = PATH_VARIABLES.buffer
-    // let missingFiles = await checkAllPresentFiles(fileNames, basepath)
-
-    // for(let key in missingFiles){
-    //   await generateFiles(missingFiles[key], maxPerFile)
-    // }
   }
 }
-
-
-// export const checkAllPresentFiles = (fileNames, basepath) => {
-
-//   let unprocessed: Array<string> = []
-//   let processed: Array<string> = []
-
-//   let presentFiles = fs.readdirSync(basepath);
-//   presentFiles = presentFiles.filter(f => f.includes(".txt"));
-//   for(let presentFile of presentFiles){
-//     let presenFileArray = presentFile.split(/[\s_.]+/);
-//     if(presenFileArray[1] && presenFileArray[2]){
-//       let presentFileName = presenFileArray[1] + '_' + presenFileArray[2];
-//       processed.push(presentFileName);
-//     }
-//   };
-
-//   unprocessed = _.difference(fileNames, processed);
-//   return unprocessed;
-// }
 
 
 export const generateFiles = async(fileName, maxPerFile, channel) => {
@@ -142,4 +106,21 @@ const getCsvWriter = (savePath) => {
     logger.error(error)
   }
 
+}
+
+// check if backup available is more than equal to the maxPerFile
+export const checkBackupThreshold = async(fileName, maxPerFile) => {
+  let fileNameArray = fileName.split('_')
+  let skuCode = fileNameArray[2]
+  let skuBackupCount = await getActiveBackupCount(skuCode)
+
+  if(skuBackupCount <= maxPerFile){
+    console.log('Backup is less than maxPerFile, cannot generate files')
+    return Promise.resolve(false)
+  }
+
+  if(skuBackupCount > maxPerFile) {
+    console.log('Backup available, proceeding to generate file!')
+    return Promise.resolve(true)
+  }
 }
