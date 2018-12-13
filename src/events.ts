@@ -11,7 +11,10 @@ export const event = {
   JOB_PROGRESSED: "update-job-progress",
   UPDATE_JOB_LIST: "update-job-list",
   JOB_ADDED: "job-added",
+  JOB_COMPLETED: "job-completed",
   SKU_SELECTED: "sku-selected",
-  VOLUME_CHANGED: "volume-changed"
+  VOLUME_CHANGED: "volume-changed",
+  SKU_STORE_CHANGED: "sku-store-changed",
+  SKU_BACKUP_AVAILABLE: "sku-backup-available"
 }
 

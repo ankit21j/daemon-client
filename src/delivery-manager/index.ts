@@ -27,45 +27,27 @@ const pickupWatcher = chokidar.watch(PATH_VARIABLES.pickup, {
   cwd: PATH_VARIABLES.pickup         //defines the file base location to get only the affected file
 })
 
-// Pickup watcher
-pickupWatcher
-  .on('ready', (path) => {
-    // list all files present in the directory
-    setTimeout(() => {
-      listFilesOnReady()
-    }, 5000)
-
-  })
-  .on("unlink", async(path) => {
-    let fileNameArray = path.split('_')
-    let fileName = fileNameArray[1] + '_' + fileNameArray[2]
-    await deficitFileManager(fileName)
-
-  })
-
-
   export const watcherMain = (channel) => {
-    logger.info('watcher main')
 
-    channel.pub(event.FETCH_SKUS)
+    // channel.pub(event.FETCH_SKUS)
   
-    channel.sub(event.SKUS_RECEIVED, skus => {
-      props = {
-        ...props,
-        enabledSkus : Object.assign({},props.enabledSkus, skus)
-      }
-    })
+    // channel.sub(event.SKUS_RECEIVED, skus => {
+    //   props = {
+    //     ...props,
+    //     enabledSkus : Object.assign({},props.enabledSkus, skus)
+    //   }
+    // })
   
-    channel.pub(event.FETCH_LINES)
+    // channel.pub(event.FETCH_LINES)
   
-    channel.sub(event.LINES_RECEIVED, lines => {
-      props = {
-        ...props,
-        enabledLines : Object.assign({},props.enabledLines, lines)
-      }
-    })
+    // channel.sub(event.LINES_RECEIVED, lines => {
+    //   props = {
+    //     ...props,
+    //     enabledLines : Object.assign({},props.enabledLines, lines)
+    //   }
+    // })
   
-    channel.pub(event.FETCH_UID_LIMITS)
+    // channel.pub(event.FETCH_UID_LIMITS)
   
     channel.sub(event.UID_LIMITS_RECEIVED, uidLimits => {
       props = {
@@ -74,32 +56,38 @@ pickupWatcher
       }
     })
 
+    // Pickup watcher
+    pickupWatcher
+    .on("unlink", async(path) => {
+      let fileNameArray = path.split('_')
+      let fileName = fileNameArray[1] + '_' + fileNameArray[2]
+      await deficitFileManager(fileName,channel)
+
+    })
+
+    logger.info('watcher main')   
+    channel.sub(event.SKU_BACKUP_AVAILABLE, async(data) => {
+      console.log('sku backup available')
+      console.log(data)
+      await listFilesOnReady(channel, data.selectedSku, data.enabledLines)
+    }) 
+
   }
 
-  const listFilesOnReady = async() => {
-
+  const listFilesOnReady = async(channel, sku, enabledLines) => {
     let fileNames:Array<string> = []
-    for(let sku in props['enabledSkus']){
-      for(let line in props['enabledLines']){
-        let filename = props['enabledLines'][line] + '_' + props['enabledSkus'][sku]['code']
+    // for(let sku in props['enabledSkus']){
+      for(let line in enabledLines){
+        // let filename = props['enabledLines'][line] + '_' + props['enabledSkus'][sku]['code']
+        let filename = enabledLines[line] + '_' + sku['code']
         fileNames.push(filename)
       }  
-    }
-    
+    // }
     // let basepath = PATH_VARIABLES.pickup
     let missingFiles = await checkAllPresentFiles(fileNames, basepath)
 
     for(let key in missingFiles){
-      await deficitFileManager(missingFiles[key])
-      // let srcPath = await generateFiles(missingFiles[key],props['uidLimits']['maxPerFile'])
-
-      // if(srcPath){
-      //   let destPathArray: Array<string> = String(srcPath).split('/')
-      //   let destPath = basepath + '/' + destPathArray[destPathArray.length - 1]
-
-      //   console.log(srcPath, destPath)
-      //   await copyFiles(srcPath, destPath)
-      // }
+      await deficitFileManager(missingFiles[key],channel)
     }
   }
 
@@ -139,9 +127,9 @@ pickupWatcher
   }
 
 
-  const deficitFileManager = async(fileName) => {
+  const deficitFileManager = async(fileName,channel) => {
 
-    let srcPath = await generateFiles(fileName, props['uidLimits']['maxPerFile'])
+    let srcPath = await generateFiles(fileName, props['uidLimits']['maxPerFile'],channel)
 
     if(srcPath){
       let destPathArray: Array<string> = String(srcPath).split('/')

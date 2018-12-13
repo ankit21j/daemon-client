@@ -21,7 +21,7 @@ const jobCreationManager = async(channel) => {
   channel.sub(event.FETCH_SKUS, async() => {
     try {
       
-      console.log('state manager')
+      // console.log('state manager')
       let mapSkus = {}
       let skus = await fetchEnabledSkus(db)
       for( let sku in skus){
@@ -73,6 +73,7 @@ const jobCreationManager = async(channel) => {
     startJob(job, (progress) => {
       channel.pub(event.JOB_PROGRESSED, progress)
     },selectedSku, clientConfig['authToken'])
+
   })
 }
 

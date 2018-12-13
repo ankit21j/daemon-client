@@ -6,7 +6,7 @@ import { event } from "./events"
 
 import { checkCollection } from "./db-operations/collection-list"
 
-import { createSkuStore, findAllDocuments } from "./db-operations/sku-store"
+import { createSkuStore } from "./db-operations/sku-store"
 
 import { computeActiveBackup } from "./deficit-manager/compute-backup"
 
@@ -50,6 +50,11 @@ export const initSkuStore = async(channel) => {
     // find respective collections and populate store
     await populateSkuStore(props, channel)
   },5000)
+
+  channel.sub(event.SKU_STORE_CHANGED, async() => {
+    console.log('SKU Store change event')
+    await populateSkuStore(props, channel)
+  })
 
 }
 

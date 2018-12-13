@@ -25,11 +25,16 @@ export const computeActiveBackup = async(channel, db, sku, uidLimits, enabledLin
     let requiredVol = backupPerSku - Number(skuBackupCount)
     let data = { selectedSku: sku, volume: requiredVol}
 
-    channel.pub(event.ADD_JOB, data) 
-
+    await channel.pub(event.ADD_JOB, data) 
+    console.log('here')
   }
   if(skuBackupCount >= backupPerSku){
     console.log('deliver files to buffer')
+    let data = {
+      selectedSku : sku,
+      enabledLines : enabledLines
+    }
+    channel.pub(event.SKU_BACKUP_AVAILABLE, data)
 
     // check buffer dir and write to file
     // let fileNames:Array<string> = []
@@ -68,7 +73,7 @@ export const computeActiveBackup = async(channel, db, sku, uidLimits, enabledLin
 // }
 
 
-export const generateFiles = async(fileName, maxPerFile) => {
+export const generateFiles = async(fileName, maxPerFile, channel) => {
   return new Promise(async(resolve, reject) => {
 
     let fileNameArray = fileName.split('_')
@@ -109,6 +114,7 @@ export const generateFiles = async(fileName, maxPerFile) => {
         .then(async() => {
           await updateDeliveredStatus(batchId)
           console.log('File moved to delivered successfully')
+          // channel.pub(event.SKU_STORE_CHANGED)
           resolve(destPath)
         })
         .catch(error => {

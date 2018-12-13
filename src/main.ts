@@ -18,7 +18,8 @@ import { initSkuStore } from "./populate-sku-store"
 
 import { createChannel } from "./pubsub"
 import { stateManager } from "./state-manager"
-import { initEvents } from "./default-events"
+
+import { POLLING_INTERVALS } from "./constants"
 
 import { watcherMain } from "./delivery-manager/index"
 
@@ -44,18 +45,24 @@ const main = async () => {
     console.log(clientConfigStatus)
   }
   
-  if(clientConfigStatus){
-    let jobCreationSagaChannel = createChannel()
-    await stateManager(jobCreationSagaChannel)
+  // if(clientConfigStatus){
+  //   let jobCreationSagaChannel = createChannel()
+  //   await stateManager(jobCreationSagaChannel)
     
-    // init deficit manager
-    await initSkuStore(jobCreationSagaChannel)
+  //   // init deficit manager
+  //   await initSkuStore(jobCreationSagaChannel)
   
-    await watcherMain(jobCreationSagaChannel)
+  //   await watcherMain(jobCreationSagaChannel)
 
-  }
+  // }
 
+  let jobCreationSagaChannel = createChannel()
 
+  await initSkuStoreScheduler(clientConfigStatus, jobCreationSagaChannel)
+
+  await watcherMain(jobCreationSagaChannel)
+
+  await scheduleHealthCheck(clientConfigStatus, jobCreationSagaChannel)
 }
 
 const connectToMongo = async (uriConnect: string, retryNumber: number) => {
@@ -83,6 +90,24 @@ const retryMongoConnection = (uriConnect, retryNumber) => {
       connectToMongo(uriConnect, retryNumber - 1)
     }, 10000)
   }
+}
+
+
+const initSkuStoreScheduler = async(clientConfigStatus, jobCreationSagaChannel) => {
+  if(clientConfigStatus){
+    await stateManager(jobCreationSagaChannel)
+    
+    // init deficit manager
+    await initSkuStore(jobCreationSagaChannel)
+  }
+}
+
+const scheduleHealthCheck = async(clientConfigStatus, jobCreationSagaChannel) => {  
+  setTimeout(async() => {
+    console.log('---- wait 2 mins ----')
+    await initSkuStoreScheduler(clientConfigStatus, jobCreationSagaChannel)
+    scheduleHealthCheck(clientConfigStatus, jobCreationSagaChannel);
+  }, POLLING_INTERVALS.sku_store_watcher);
 }
 
 main()
