@@ -27,6 +27,8 @@ import { POLLING_INTERVALS } from "./constants"
 
 import { watcherMain } from "./delivery-manager/index"
 
+import { main as reportingMain } from "./reporting-manager/index"
+
 const main = async () => {
   // connect to mongodb
   const dbObject = await connectToMongo(connectionUri, 3)
@@ -37,25 +39,26 @@ const main = async () => {
 
   // get clientConfig collection
   const clientCollection = await dbMain(dbObject)
-  // logger.info(clientConfigStatus)
 
   // if config exists, update else insert
-  if (clientConfigStatus) {
-    await updateDoc(clientCollection, clientConfigObj)
-  } else if (!clientConfigStatus) {
-    await insertDoc(clientCollection, clientConfigObj)
-    clientConfigStatus = true
-    // logger.info(clientConfigStatus)
-  }
+  // if (clientConfigStatus) {
+  //   await updateDoc(clientCollection, clientConfigObj)
+  // } else if (!clientConfigStatus) {
+  //   await insertDoc(clientCollection, clientConfigObj)
+  //   clientConfigStatus = true
+  // }
 
-  const jobCreationSagaChannel = createChannel()
+  // const jobCreationSagaChannel = createChannel()
 
-  await stateManager(jobCreationSagaChannel)
-  await initSkuStoreScheduler(clientConfigStatus, jobCreationSagaChannel)
+  // await stateManager(jobCreationSagaChannel)
+  // await initSkuStoreScheduler(clientConfigStatus, jobCreationSagaChannel)
 
-  await watcherMain(jobCreationSagaChannel)
+  // await watcherMain(jobCreationSagaChannel)
 
-  await scheduleDbWatcher(clientConfigStatus, jobCreationSagaChannel)
+  // await scheduleDbWatcher(clientConfigStatus, jobCreationSagaChannel)
+
+  await reportingMain()
+
 }
 
 const connectToMongo = async (uriConnect: string, retryNumber: number) => {
