@@ -35,20 +35,21 @@ const main = async () => {
   // connect to mongodb
   const dbObject = await connectToMongo(connectionUri, 3)
 
-  const clientConfigObj = await clientMain()
+  const clientConfigStatus = await schedule(dbObject)
+  // const clientConfigObj = await clientMain()
 
-  let clientConfigStatus = await checkCollection("clientConfig")
+  // let clientConfigStatus = await checkCollection("clientConfig")
 
-  // get clientConfig collection
-  const clientCollection = await dbMain(dbObject)
+  // // get clientConfig collection
+  // const clientCollection = await dbMain(dbObject)
 
-  // if config exists, update else insert
-  if (clientConfigStatus) {
-    await updateDoc(clientCollection, clientConfigObj)
-  } else if (!clientConfigStatus) {
-    await insertDoc(clientCollection, clientConfigObj)
-    clientConfigStatus = true
-  }
+  // // if config exists, update else insert
+  // if (clientConfigStatus) {
+  //   await updateDoc(clientCollection, clientConfigObj)
+  // } else if (!clientConfigStatus) {
+  //   await insertDoc(clientCollection, clientConfigObj)
+  //   clientConfigStatus = true
+  // }
 
   const jobCreationSagaChannel = createChannel()
 
@@ -112,6 +113,37 @@ const scheduleDbWatcher = async (
     await initSkuStoreScheduler(clientConfigStatus, jobCreationSagaChannel)
     scheduleDbWatcher(clientConfigStatus, jobCreationSagaChannel)
   }, POLLING_INTERVALS.sku_store_watcher)
+}
+
+// config watcher
+const schedule = async dbObject => {
+  await fetchConfig(dbObject)
+
+  logger.info("schedule sync manager every 10mins")
+  setTimeout(async () => {
+    await schedule(dbObject)
+  }, 10 * 60 * 1000)
+}
+
+const fetchConfig = async dbObject => {
+  return new Promise(async (resolve, reject) => {
+    const clientConfigObj = await clientMain()
+
+    let clientConfigStatus = await checkCollection("clientConfig")
+
+    // get clientConfig collection
+    const clientCollection = await dbMain(dbObject)
+
+    // if config exists, update else insert
+    if (clientConfigStatus) {
+      await updateDoc(clientCollection, clientConfigObj)
+    } else if (!clientConfigStatus) {
+      await insertDoc(clientCollection, clientConfigObj)
+      clientConfigStatus = true
+    }
+
+    resolve(clientConfigStatus)
+  })
 }
 
 main()

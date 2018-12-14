@@ -5,16 +5,14 @@ networks:
 
 services:
   client:
-     container_name: npm
-     build: .
-     volumes:
-      - "/Users/ankitgupta/Documents/wireframes/:/data"
-     ports:
-       - "3000:3000"
-     restart: unless-stopped
-     depends_on:
-       - mongo
-     networks:
+    container_name: npm
+    build: .
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+    depends_on:
+      - mongo
+    networks:
       - client
 
   mongo:
