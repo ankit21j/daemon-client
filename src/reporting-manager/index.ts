@@ -6,6 +6,8 @@ import * as moment from "moment"
 
 import { PATH_VARIABLES } from "../constants"
 
+import { markAsConsumed } from "../db-operations/sku-store"
+
 export const main = async() => {
   // init reporting manager
 
@@ -78,10 +80,14 @@ const processLogFile = async(data, fileObj, logFileName) => {
     let deliveryFilePath = await getDeliveredFile(logFileName)
 
     // read delivered file
-    // let deliveredFileObj = await readDeliveredFile(deliveryFilePath)
-    
+    let deliveredFileObj = await readDeliveredFile(deliveryFilePath)
+
     let mfdObj = data[objLength].manufacturingDate
     let mfd = await getMfdTimestamp(mfdObj)
+    let date = new Date(mfd);
+    
+    date.setMonth(date.getMonth() + 3);
+    let expiry = date.getTime();
 
     let logDatetime = data[objLength].datetime;
     logDatetime = moment(logDatetime, 'DD.MM.YYYY HH:mm:ss')
@@ -90,10 +96,27 @@ const processLogFile = async(data, fileObj, logFileName) => {
 
     let productFound = false;
     let lastPrintedCode = data[objLength].lastPrinteDUID
+    console.log(lastPrintedCode)
+    console.log('---------')
 
     while(!productFound){
       // find indexOf productCode in delivered text file
+      let productIndex = deliveredFileObj.indexOf(lastPrintedCode)
+      if(productIndex > -1){
+        productFound = true
+      }
+      
+      if(productFound){
+        let printedCodes = deliveredFileObj.slice(0, productIndex + 1)
 
+        await markAsConsumed(printedCodes, mfd, expiry, logTimestamp)
+
+      } else if(objLength > 0) {
+        objLength -= 1;
+        lastPrintedCode = data[objLength].lastPrinteDUID
+      } else if(objLength <= 0) {
+        productFound = true;
+      }
     }
 
     //     // find lastPrintedUid wrt to jobId in local DB
@@ -145,13 +168,23 @@ const getDeliveredFile = async(fileName) => {
 
 
 const readDeliveredFile = async(deliveredFile) => {
-  console.log(deliveredFile)
+  return new Promise<string[]>(resolve => {
+    const stream = fs.createReadStream(deliveredFile, {encoding : 'utf8'})
+    let streamObject
+    stream.on('data', data => {
+      streamObject = data.split(/\n/)
+      stream.destroy();
+    })
+    stream.on('close', () => {
+      resolve(streamObject);
+    });
+  })
 
 }
 
 const getMfdTimestamp = async(mfd) => {
   mfd = mfd.split(/[\s.]+/)
-  return new Promise((resolve, reject) => {
+  return new Promise<number>((resolve, reject) => {
     try {
       const mfdDate = moment().date(mfd[0]).format('D')
       const mfdMonth = moment().date(mfd[1]).format('M')

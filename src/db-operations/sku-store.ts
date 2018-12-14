@@ -121,3 +121,22 @@ export const updateDeliveredStatus = batchId => {
       )
   })
 }
+
+export const markAsConsumed = (productArray, mfd, expiry, logTimestamp) => {
+  return new Promise((resolve, reject) => {
+    db
+    .collection("skuStore")
+    .update(
+      { numericCode : { $in : productArray }, consumed : false },
+      { $set : { consumed : true, mfd : mfd, expiry : expiry , logTimestamp : logTimestamp } },
+      { multi: true },
+      (err, docs) => {
+        if (err) {
+          logger.error(err)
+          reject(err)
+        }
+        resolve(docs)
+      }
+    )
+  })
+}
