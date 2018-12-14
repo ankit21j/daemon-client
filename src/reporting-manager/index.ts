@@ -1,5 +1,6 @@
 import * as fsExtra from "fs-extra"
 import * as fs from "fs"
+import * as path from "path"
 
 import * as logger from "winston"
 import * as moment from "moment"
@@ -8,10 +9,16 @@ import { PATH_VARIABLES } from "../constants"
 
 import { markAsConsumed } from "../db-operations/sku-store"
 
+let processedLogDir
+
 export const main = async() => {
   // init reporting manager
 
   const reportingDir = PATH_VARIABLES.reporting
+  processedLogDir = PATH_VARIABLES.reporting + '/o4s-processed-logs/'
+  if (!fs.existsSync(processedLogDir)){
+    fs.mkdirSync(processedLogDir);
+  }
 
   start(reportingDir)
 }
@@ -33,6 +40,7 @@ const schedule = async(reportingDir) => {
           }
 
           let logFile = reportingDir + '/' + res[element];
+
           await readLogFile(logFile, fileObj, res[element]);
         }
       };
@@ -74,7 +82,6 @@ const readLogFile = async(logFile, fileObj, logFileName) => {
 const processLogFile = async(data, fileObj, logFileName) => {
      
     let objLength = data.length - 1
-    console.log(objLength, fileObj)
 
     // get corressponding txt file from delivery directory
     let deliveryFilePath = await getDeliveredFile(logFileName)
@@ -110,6 +117,20 @@ const processLogFile = async(data, fileObj, logFileName) => {
         let printedCodes = deliveredFileObj.slice(0, productIndex + 1)
 
         await markAsConsumed(printedCodes, mfd, expiry, logTimestamp)
+          .then(async() => {
+            let currentTimestamp = Date.now()
+            let logFileArray = logFileName.split('.');
+            let processedLogName = logFileArray[0] + '_' + currentTimestamp + '.' + logFileArray[1]
+      
+            let savePath = path.join(PATH_VARIABLES.reporting + '/', logFileName);
+            let filepath = path.join(processedLogDir, processedLogName)
+      
+            await fsExtra.move(savePath, filepath)
+            console.log(`Moving log file - ${logFileName} to processed dir`)
+          })
+          .catch((err) => {
+            logger.error(err)
+          })
 
       } else if(objLength > 0) {
         objLength -= 1;
@@ -118,38 +139,7 @@ const processLogFile = async(data, fileObj, logFileName) => {
         productFound = true;
       }
     }
-
-    //     // find lastPrintedUid wrt to jobId in local DB
-    //     [productFound, lastJobId, lastCreatedAt] = await findLocalUid(jobId, skuCode ,lastPrintedCode)
-    //     if(productFound){
-    //       // Sync with server
-
-    //       await fetchCodesToActivate(logFileName, skuCode, lastJobId, lastCreatedAt, mfd)
-
-    //     } else if(objLength > 0) {
-    //       objLength -= 1;
-    //       lastPrintedCode = obj[objLength].lastPrinteDUID
-    //     } else if(objLength <= 0) {
-    //       productFound = true;
-    //     }
-    //   }
 }
-
-// const findLocalUid = async(displayId, skuCode, lastPrintedCode) => {
-//   // query to find code in localdb wrt jobid
-
-//   let productIdData = await initDb.findOneByProductCode(displayId, skuCode, lastPrintedCode)
-//   console.log(productIdData)
-
-
-//   if(productIdData){
-//     return [true, productIdData.jobId, productIdData.createdAt]
-//   }else{
-//     return [false,false,false]
-//   }
-// }
-
-
 
 const getDeliveredFile = async(fileName) => {
   
