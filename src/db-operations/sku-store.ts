@@ -2,6 +2,8 @@ import * as logger from "winston"
 
 import { db } from "../db"
 
+import { IProductItem, IAuthToken } from "../interfaces/sku-store"
+
 export const createSkuStore = () => {
   return new Promise((resolve, reject) => {
     db.createCollection("skuStore", (err, collection) => {
@@ -11,6 +13,22 @@ export const createSkuStore = () => {
       }
       resolve(collection)
     })
+  })
+}
+
+export const fetchAuthToken = () => {
+  return new Promise<IAuthToken>((resolve, reject) => {
+    db
+      .collection("clientConfig")
+      .find({})
+      .project({ _id: 0, authToken: 1 })
+      .toArray((err, doc) => {
+        if (err) {
+          logger.error(err)
+          reject(err)
+        }
+        resolve(doc[0].authToken)
+      })
   })
 }
 
@@ -124,11 +142,16 @@ export const updateDeliveredStatus = batchId => {
 
 export const markAsConsumed = (productArray, mfd, expiry, logTimestamp) => {
   return new Promise((resolve, reject) => {
-    db
-    .collection("skuStore")
-    .update(
-      { numericCode : { $in : productArray }, consumed : false },
-      { $set : { consumed : true, mfd : mfd, expiry : expiry , logTimestamp : logTimestamp } },
+    db.collection("skuStore").update(
+      { numericCode: { $in: productArray }, consumed: false },
+      {
+        $set: {
+          consumed: true,
+          mfd: mfd,
+          expiry: expiry,
+          logTimestamp: logTimestamp
+        }
+      },
       { multi: true },
       (err, docs) => {
         if (err) {
@@ -138,5 +161,56 @@ export const markAsConsumed = (productArray, mfd, expiry, logTimestamp) => {
         resolve(docs)
       }
     )
+  })
+}
+
+export const fetchUniqueMfd = () => {
+  return new Promise<string[]>((resolve, reject) => {
+    db
+      .collection("skuStore")
+      .distinct("mfd", { consumed: true, synced: false }, (err, docs) => {
+        if (err) {
+          logger.error(err)
+          reject(err)
+        }
+        resolve(docs)
+      })
+  })
+}
+
+export const fetchConsumedProducts = mfd => {
+  return new Promise<IProductItem[]>((resolve, reject) => {
+    db
+      .collection("skuStore")
+      .find({ mfd: mfd, consumed: true, synced: false })
+      .project({ _id: 0, numericCode: 1 })
+      .toArray((err, docs) => {
+        if (err) {
+          logger.error(err)
+          reject(err)
+        }
+        resolve(docs)
+      })
+  })
+}
+
+export const markAsSynced = productArray => {
+  logger.info(productArray)
+  return new Promise((resolve, reject) => {
+    db
+      .collection("skuStore")
+      .update(
+        { numericCode: { $in: productArray }, consumed: true, synced: false },
+        { $set: { synced: true } },
+        { multi: true },
+        (err, docs) => {
+          if (err) {
+            logger.error(err)
+            reject(err)
+          }
+          // logger.info(docs)
+          resolve(docs)
+        }
+      )
   })
 }

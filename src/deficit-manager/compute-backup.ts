@@ -35,7 +35,7 @@ export const computeActiveBackup = async (
 
     await channel.pub(event.ADD_JOB, data)
   }
-  if (skuBackupCount >= backupPerSku) {
+  if (skuBackupCount >= maxPerFile) {
     const skuData = {
       selectedSku: sku
     }

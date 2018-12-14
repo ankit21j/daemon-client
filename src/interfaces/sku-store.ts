@@ -1,5 +1,3 @@
-import * as logger from "winston"
-
 export interface ISkuStore {
   jobId: string
   skuName: string
@@ -14,4 +12,12 @@ export interface ISkuStore {
   delivered: boolean
   consumed: boolean
   synced: boolean
+}
+
+export interface IProductItem {
+  numericCode: string
+}
+
+export interface IAuthToken {
+  authToken: string
 }

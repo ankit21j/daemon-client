@@ -7,5 +7,5 @@ export const PATH_VARIABLES = {
 
 export const POLLING_INTERVALS = {
   config_watcher: 1 * 60 * 1000,
-  sku_store_watcher: 2 * 60 * 1000
+  sku_store_watcher: 4 * 60 * 1000
 }

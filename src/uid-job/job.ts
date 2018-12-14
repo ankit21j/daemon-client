@@ -75,6 +75,7 @@ export const start = async (job, onProgress, sku, authToken) => {
           await insertSkuDocs(skuDoc)
         }
         progress += value
+        logger.info("Progress: ", progress)
         onProgress({
           id: job.id,
           progress,
@@ -125,7 +126,7 @@ const fetchProducts = async (uid, volume, authToken) => {
   )
 }
 
-function* batches(volume: number, batchSize: number) {
+export function* batches(volume: number, batchSize: number) {
   const parts = Math.ceil(volume / batchSize)
 
   for (let i = 0; i < parts; i++) {
