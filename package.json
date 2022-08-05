@@ -85,7 +85,7 @@
     "lodash": "^4.17.11",
     "moment": "2.20.1",
     "mongodb": "3.1.6",
-    "mongoose": "^5.3.13",
+    "mongoose": "^5.7.5",
     "ramda": "0.25.0",
     "ts-event-bus": "^2.0.0",
     "uuidv4": "^2.0.0",
