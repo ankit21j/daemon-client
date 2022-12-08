@@ -77,7 +77,7 @@
     "conset": "2.0.3",
     "csv-write-stream": "^2.0.0",
     "dotenv": "4.0.0",
-    "express": "4.16.3",
+    "express": "4.17.3",
     "fs-extra": "^7.0.1",
     "hashids": "^1.1.4",
     "helmet": "3.9.0",
